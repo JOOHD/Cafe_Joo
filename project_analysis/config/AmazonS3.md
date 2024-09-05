@@ -54,7 +54,7 @@
         - 더 이상 필요하지 않은 객체는 언제든지 삭제, 삭제된 객체는 버전 관리 기능이 활성화된 경우 복구할 수 있다.
 
     - S3는 이와 같은 기능을 통해 대규모 데이터를 안전하고 효율적으로 저장, 관리할 수 있는 서비스이다.
-### 프로젝트 코드 예시
+### AmazonS3 class code
 
     import com.amazonaws.SdkClientException;
     import com.amazonaws.services.s3.AmazonS3Client;
@@ -325,3 +325,10 @@
             s3UploaderService.deleteFile(fileUrl);
             return ReposneEntity.noContent().build();
         }
+
+### 느낀점
+    AWS를 학원에서 서버 배포 목적으로 EC2..?를 사용을 해본 경험이 있다.
+    클론 코딩이지만 이 프로젝트 클래스에서 사용하는 목적은 파일 업로드, 다운로드, 삭제, 대용량 데이터(img) 관리에 
+    amazonS3 사용이 유용하다고 알게되었다.
+
+    좀 더, aws에 관해서 찾아보고 학습하여 amazonS3를 활용해 내 프로젝트에 적용해 보고 싶다.
