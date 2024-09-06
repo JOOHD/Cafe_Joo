@@ -84,7 +84,7 @@
         }
 
         // multipartFile = 업로드할 파일, dirName = 업로드할 디렉토리 이름
-        // 이미지 파일 업로드 jiyeon-23.08.25
+        // 이미지 파일 업로드 
         public String uploadFileToS3(MultipartFile multipartFile, String dirName) throws IOException {
             String fileName = dirName + "/" + multipartFile.getOriginalFilename();
 
@@ -106,8 +106,7 @@
             return amazonS3Client.getUrl(bucketName, fileName).toString();
         }
 
-        // 이미지 파일 삭제 jiyeon-23.08.25
-        // 메서드는 구현했지만 S3확인했을때 이미지가 삭제되고있진 않습니다(추후 다시 구현예정)
+        // 이미지 파일 삭제
         public void deleteFile(String picture) throws IOException {
             try {
                 // picture 값에서 파일의 경로와 이름 부분을 추출하여 키로 사용
