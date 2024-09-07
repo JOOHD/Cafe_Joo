@@ -100,6 +100,9 @@
             - JWT 토큰을 생성하는 목적의 메서드.
             - Claim claim : 사용자의 정보(email, role)를 담은 객체, 여기서
                                 setSubject(email)로 이메일을, setId(userId)로 사용자 ID를 설정.
+            - claims.put(KEY_ROLE, role) : 사용자 역할을 클레임에 추가.
+            - signWith(SignatureAlgorithm.HS512, secretKey) 
+                HS512 알고리즘과 secretKey를 사용하여 토큰을 서명
 
                 ● Claim 이란?
                     - JWT(Jason Web Token)에서 사용자의 정보나 추가 데이터를 담는 부분.
@@ -113,6 +116,14 @@
                             2. 비공식 클레임
                                 개발자가 필요에 따라 추가하는 클레임, role, userId 같은
 
+                    - TokenProvider class에서는 claims에 담긴 정보는
+                        1. subject : email(사용자 식별을 위한 주제)
+                        2. id : 사용자 ID
+                        3. role : 사용자 역할(권한)
+                        
+                        - 위 정보들은 JWT 토큰에 포함되어, 토큰이 생성되면 클라이언트에 전달된다.
+                          서버는 이후 요청에서 이 토큰을 받아 클레임 정보를 추출하고, 해당 사용자가 누구인지, 어떤 권한을 가진지 검증.
+
                     - Token을 String으로 선언하는 이유
                         - JWT가 기본적으로 Base64로 인코딩된 문자열.
 
@@ -122,8 +133,9 @@
 
         2. getAuthentication(String token)
             - JWT 토큰에서 인증 정보를 추출하는 메서드.
-            - 토큰에서 사용자 이메일을 추출하여 authService로 사용자 정보를 로드하고, 이를 바탕으로 
-                UsernamePasswordAuthenticationToken 을 생성하여 반환.
+            - authService.loadUserByUsername(email), UserDetails에서 (Authorities) 추출    
+                - 토큰에서 사용자 이메일을 추출하여 authService로 사용자 정보를 로드하고, 이를 바탕으로 
+                UsernamePasswordAuthenticationToken 을 생성하여 인증 정보 반환.
 
         3. getEamil(String token)
             - JWT 토큰에서 사용자의 이메일을 추출하는 메서드.
@@ -139,13 +151,40 @@
         6. removeBearerFromToken(String token)
             - 토큰에서 Bearer 라는 인증 타입을 제거하는 메서드아디.
                 JWT 토큰 앞에 붙어있는 Bearer 문자열을 제거하고 실제 토큰만 추출한다.
+                    - TOKEN_PREFIX = "Bearer"이며, 접두사를 제거한 순수 jwt token만 추출
+                    
 
-### 코드 흐름
+### 로직 흐름
         
     1. 사용자가 로그인 시, generateToken() 메서드로 JWT 토큰을 생성하여 발급.
+        - 사용자 정보는 JWT의 Claims에 (ID, email, role)등의 정보가 포함.
+
     2. 클라이언트는 이후 요청 시 헤더에 이 JWT 토큰을 포함하여 서버에 요청을 보낸다.
-    3. 서버는 요청을 받을 때 getAuthentication()을 통해 토큰을 해석하고, 사용자의 인증 정보를 추출.   
-    4. 추출한 정보를 통해 사용자 인증을 처리하고, 필요한 경우 validateToken()으로 토큰의 유효성을 검사한다.
+        - 생성된 토큰은 클라이언트에게 전달되어 저장, 이후 API 요청 시, 
+            HTTP Header의 Authorization 필드에 Bearer <token> 형식으로 토큰을 포함하여 전송.
+                - Authorization : HTTP 요청 헤더의 이름
+                - Bearer : 인증 방식을 나타내는 접두어 
+                - JWT 토큰 : 서버에서 발급한 JSON Web Token(사용자의 정보가 포함되어 있다.)
+                
+                ex)
+                    Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9(JWT header)
+                                          eyJzdWIiOiJqb2huZG9lQGV4YW1wbGUuY29t(payload(사용자 정보))
+                                          SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_a(서명(토큰 위조를 방지)
+
+    3. 서버는 요청을 받을 때 getAuthentication()을 통해 토큰을 해석하고, 사용자의 인증 정보를 추출.
+        - TokenProvider를 사용하여 토큰을 검증
+        - validateToken 메서드를 통해 토큰의 유효성을 검사
+        - getAuthentication 메서드를 통해 Authentication 객체를 생성하여 Spring security의 컨텍스트에 설정.
+
+    4. Authentication 객체에 포함된 역할 정보를 바탕으로 사용자의 접근 권한을 결정.
+
+### 정리
+    TokenProvider 
+        - JWT 토큰의 생성, 검증, 인증 정보 추출 등을 담당하는 커스텀 클래스
+    enum class의 관계
+        - Role과 같은 enum을 사용하여 사용자 역할을 명확하게 정의하고, 이를 토큰에 포함시켜 인증 및 인가 과정에서 활용.
+    Spring과 연동
+        - Spring의 컴포넌트 스캔, 의존성 주입, Spring Security와 통합하여 인증 및 인가 로직을 처리.
 
 
 
