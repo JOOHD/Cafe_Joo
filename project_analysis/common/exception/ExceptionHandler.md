@@ -125,6 +125,49 @@
             일반적인 예외 발생 시 반환되는 응답 클래스이다.
             ErrorCode 타입의 에러 코드와 문자열 형태의 에러 메시지를 포함.
 
+### 메서드 응답 코드
+    
+    ● UserDTO class
+
+    public class UserDTO {
+        
+        @NotNull(message = "이메일은 필수입니다.")
+        private String email;
+
+        @Size(min = 6, message = "비밀번호는 최소 6자리여야 합니다.")
+        private String password;
+    }
+    - UserDTO에서 email 필드가 @NotNull로 검증되었는데, 사용자가 email 값을 미입력 시, 결과 
+        MethodArgumentNotValidException 발생, ExceptionHandler 처리하여 응답.
+
+        - ErrorCode = NotNull
+          ErrorMessage = '이메일은 필수입니다.'
+
+    ● methodInvalidExceptionHandler class 
+
+    // 컨트롤러 DTO validation 핸들러-yesun-23.08.21
+    @org.springframework.web.bind.annotation.ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<MethodInvalidResponse> methodInvalidException(
+        final MethodArgumentNotValidException e
+    ) {
+        BindingResult bindingResult = e.getBindingResult();
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(MethodInvalidResponse.builder()
+                .errorCode(bindingResult.getFieldErrors().get(0).getCode())
+                .errorMessage(bindingResult.getFieldErrors().get(0).getDefaultMessage())
+                .build());
+    }
+
+    ExceptionHandler 가 에러를 처리하는 과정.
+    1. bindingResult.getFieldErrors().get(0).getCode()
+        - bindingResult.getFieldErrors() 는 FieldError 객체들의 리스트를 반환.
+        - 첫 번째 에러(get(0))의 코드(getCode())는 NotNull 이다.
+        - 따라서 errorCode에 NotNull이 들어간다.
+      
+    2. bindingResult.getFieldErrors().get(0).getDefaultMessage();
+        - 첫 번째 에러의 기본 메시지(getDefaultMessage())는 '이메일은 필수입니다.' 입니다.
+        - 이 값이 errorMessage 에 들어가서 클라이언트에 전달.
 ### 요약
     - 이 클래스는 SpringBoot 애플리케이션에서 발생하는 예외를 처리하고, 사용자에게 일관된 에러응답을 제공.
     - 각 예외에 맞는 헨들러가 존재하며, 각 헨들러는 적절한 상태 코드와 메시지를 반환.
