@@ -24,7 +24,7 @@ public class ExceptionHandler {
        BindingResult bindingResult = e.getBindingResult();
        return ResponseEntity
                .status(HttpStatus.BAD_REQUEST)
-               .body(MethodInvalidResponse.builder()
+               .body(MethodInvalidResponse.builder()    // 응답 본문
                    .errorCode(bindingResult.getFieldErrors().get(0).getCode())
                    .errorMessage(bindingResult.getFieldErrors().get(0).getDefaultMessage())
                    .build());

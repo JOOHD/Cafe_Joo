@@ -67,12 +67,33 @@
 
     1. @RestControllerAdvice
         - Spring에서 글로벌 예외를 처리할 수 있게 하는 어노테이션으로,
-            모든 컨트롤러에서 발생하는 예외를 이 클래스에서 처리.
+            모든 컨트롤러에서 발생하는 예외를 이 클래스에서 처리. (JSON, XML과 같은 형태로 예외 응답을 반환).
+        
+        - 여러 컨트롤러에서 공통으로 처리해야 하는 예외를 한 곳에서 처리.
+        - 다양한 예외 상황(유효성 검사 실패, 타입 변환 오류 등)에 대한 응답을 일관성 있게 관리
+        - 클라이언트에게 일관된 에러 메시지를 전달하기 위한 JSON 응답 구조 제공
+        
+       @ControllerAdvice
+        - view를 반환할 때 주로 사용된다.
 
     2. MethodArgumentNotValidException
-       @ExceptionHandler(MethodArgumentNotValidException.class)
+       @ExceptionHandler(MethodArgumentNotValidException.class) 
         - 컨트롤러에서 DTO 검증 실패 시 발생하는 예외이다.
         - 예외가 발생하면 BAD_REQUEST(400) 상태 코드와 에러 코드/메시지 반환.
+
+       @ExceptionHandler(MethodArgumentNotValidException.class)
+        - @ExceptionHandler는 Spring MVC에서 특정 예외가 발생했을 때, 해당 예외를 처리할 메서드를 정의하는 어노테이션이다.        
+            - 이 어노테이션은 MethodArgumentNotValidException이 발생했을 때, 해당 예외를 처리하기 위해 MethodInvalildException 메서드를 호출하도록 지정.
+            
+       ● @ExceptionHandler(MethodArgumentNotValidException.class) 작동 방식
+        1) 클라이언트 요청 시, DTO의 필드 유효성 검사를 위해 @Valid or @Validated 어노테이션을 사용.
+        2) 유효성 검사를 통과하지 못하면, methodArgumentNotValidException 예외가 발생
+        3) Spring은 @ExceptionHandler(MethodArgumentNotValidException.class)가 붙은 메서드를 찾아 호출, 해당 예외를 처리.
+        4) 처리된 결과는 ResponseEntity와 같은 HTTP 응답으로 클라이언트에 반환.
+
+       ● 예외 처리 흐름.
+        - DTO 유효성 검사 실패 -> methodArgumentNotValidException 발생 -> methodInvalidException 메서드가 호출 
+            -> HTTP 응답으로 클라이언트에게 에러 메시지 반환. 
 
     3. MethodArgumentTypeMismatchException
        @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -118,12 +139,120 @@
         - 예외발생 시 응답으로 사용되는 데이터 클래스이다.
             각가의 에러 정보를 담아 HTTP 응답으로 반환된다.
         
-        - methodInvalidResponse
-            DTO 검증 실패 시 반환되는 응답 클래스이다.(ErrorCode, ErrorMessage)
-    
+        - MethodInvalidResponse
+            'DTO 검증 실패 시', 반환되는 응답 클래스이다.(ErrorCode, ErrorMessage)
+            클라이언트에서 잘못된 데이터를 요청했을 때, 특히 Spring의 @Valid or @Validated를 통해,
+            입력 값을 검증할 때 발상하는 응다바 객체입니다.
+                    
+            즉, form 데이터나 JSON 등의 입력값이 유효성 검사를 통과하지 못했을 때 반환.
+            
+            ex)
+                ErrorCode : 유효성 검사 실패, NotNull, Size, Pattern
+                ErrorMessage : 필드에서 발생한 유효성 검사 실패, '이 필드는 비어 있을 수 없습니다.', '최소 길이는 3자입니다.'
+
         - ExceptionResponse
-            일반적인 예외 발생 시 반환되는 응답 클래스이다.
+            '일반적인 예외 발생 시', 반환되는 응답 클래스이다.
             ErrorCode 타입의 에러 코드와 문자열 형태의 에러 메시지를 포함.
+            
+            ex)
+                ErrorCode : 'ORDER_NOT_FOUND', 'USER_NOT_AUTHORIZED'
+                ErrorMessage : '해당 주문을 찾을 수 없습니다.', '권한이 없습니다.'
+                throw new CustomException(ErrorCode.ORDER_NOT_FOUND, "해당 주문을 찾을 수 없습니다.")
+
+        - 정리
+            MethodInvalidResponse : 입력 데이터의 유효성 검증 실패와 관련된 예외 처리
+            ExceptionResponse : 일반적인 예외나 비즈니스 로직 예외 처리.
+
+### 코드 흐름
+
+    예를 들어 회원가입 요청에서 유효하지 않은 데이터를 클라이너트가 보냈을 때, ExceptionHandler가 어떻게 동작하는지 보자.
+        
+    1. 회원가입 요청 (POST/signup)
+        클랑이언트에서 회원가입 요청을 할 때, 필수 데이터인 email이 누락된 요청을 보낸다고 가정.
+        
+        ● 요청 데이터 (Invalid Data)
+            {
+                "name" : "John Doe",
+                "email" : "", // 이메일이 비어있을 경우,
+                "password" : "password123"
+            }
+
+    2. DTO 유효성 검사 설정
+        UserSignupRequest 라는 DTO에 이메일 필드는 @NotEmpty 로 유효성 검사를 설정.
+
+        ● UserSignupRequest class
+
+            public class UserSignupRequest {
+                @NotEmpty(message = "이메일은 필수 항목입니다.")
+                private String email;
+                
+                @NotEmpty(message = "이름은 필수 항목입니다.")
+                private String name;
+            
+                @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
+                private String password;
+            }
+        
+    3. Controller 요청 처리
+        회원가입 요청을 처리하는 컨트롤러에서는 @Valid를 사용하여 유효성 검사를 실행
+        
+        ● UserController
+
+            @RestController
+            @RequestMapping("/api")
+            public class UserController {
+                
+                @PostMapping("/signup")
+                public ResponseEntity<String> signup(@Valid @RequestBody UserSignupRequest request) {
+                    // 회원가입 처리 로직..
+                    return ResponseEntity.ok("회원가입 성공");
+                }
+            }
+
+    4. 유효성 검사 실패 및 예외 발생
+        - 클라언트가 보낸 요청에서 email이 비어 있기 때문에 @NotEmpty 유효성 검사를 통과 못함.
+        - Spring이 자동으로 MethodArgumentNotValidException 예외를 던진다.
+
+    5. ExceptiionHanlder 작동
+        - @RestControllerAdvice에 등록된 ExceptionHandler가 MethodArgumentNotValidException 예외를 잡아서 처리.
+        - 이때, methodInvalidException 메서드가 호출되고, 검증에 실패에 대한 정보를 가공하여 클라이언트에 반환.
+
+        ● methodInvalidException
+        
+            @org.springframework.web.bind.annotation.ExceptionHandler(MethodArgumentNotValidException.class)
+            public ResponseEntity<MethodInvalidResponse> methodInvalidException(
+            final MethodArgumentNotValidException e
+            ) {
+                BindingResult bindingResult = e.getBindingResult();
+
+                // 첫 번째 오류를 가져옴 (get(0))
+                FieldError fieldError = bindingResult.getFieldErrors().get(0);
+
+                return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(MethodInvalidResponse.builder()
+                        .errorCode(fieldError.getCode()) // NotEmpty
+                        .errorMessage(fieldError.getDefaultMessage()) // '이메일은 필수 항목입니다.'
+                        .build());
+            }
+
+    6. 클라이언트에게 반환되는 데이터
+        위의 methodInvalidException 메서드는 MethodInvalidResponse 객체를 반환하고, HTTP 응답으로 전달.
+    
+        ● 서버 응답 (Response)
+            {
+                "errorCode" : "NotEmpty".
+                "errorMessage" : "이메일은 필수 항목입니다."
+            }
+
+    7. 흐름 요약
+        1) 클라이언트가 유효하지 않은 데이터를 보내면
+        2) Spring이 컨트롤러에서 유효성 검사를 수행하고, 검사 실패 시,
+            MethodArgumentNotValidException 예외를 발생ㅎ시킴
+        3) ExceptionHandler 가 MethodArgumentNotValidException 을 잡아서 처리.
+        4) 유효성 검사 실패 정보를 클라이언트에게 반환.
+                (errorCode : NotEmpty, errorMessage : '이메일은 필수 항목입니다.').
+        5) 클라이언트는 반환된 에러 메시지를 보고 문제를 해결할 수 있다.
 
 ### 메서드 응답 코드
     
