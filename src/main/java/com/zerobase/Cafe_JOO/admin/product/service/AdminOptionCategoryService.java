@@ -1,6 +1,10 @@
 package com.zerobase.Cafe_JOO.admin.product.service;
 
+import com.zerobase.Cafe_JOO.admin.product.dto.AdminOptionCategoryDto;
+import com.zerobase.Cafe_JOO.admin.product.dto.AdminOptionCategoryForm;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public interface AdminOptionCategoryService {

@@ -1,5 +1,7 @@
 package com.zerobase.Cafe_JOO.admin.product.controller;
 
+import com.zerobase.Cafe_JOO.admin.product.dto.AdminOptionCategoryDto;
+import com.zerobase.Cafe_JOO.admin.product.dto.AdminOptionCategoryForm;
 import com.zerobase.Cafe_JOO.admin.product.service.AdminOptionCategoryService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +31,7 @@ public class AdminOptionCategoryController {
     @PostMapping
     public ResponseEntity<Void> OptionCategoryAdd(
             @Valid @RequestBody AdminOptionCategoryForm.Request optionCategoryFormRequest) {
-        AdminOptionCategoryService.addOptionCategory(optionCategoryFormRequest);
+        adminOptionCategoryService.addOptionCategory(optionCategoryFormRequest);
         return ResponseEntity.status(CREATED).build();
     }
 
@@ -46,9 +48,9 @@ public class AdminOptionCategoryController {
         List<AdminOptionCategoryDto.Response> optionCategoryDtoList =
                 adminOptionCategoryService.findOptionCategoryList();
         List<AdminOptionCategoryForm.Response> adminOptionCategoryFormList =
-                optionCategoryDtoList.stream()
-                        .map(AdminOptionCategoryForm.Response::from)
-                        .collect(Collectors.toList());
+                optionCategoryDtoList.stream() // DTO 리스트 stream()으로 변환
+                        .map(AdminOptionCategoryForm.Response::from) // 각 DTO를 Form으로 변환
+                        .collect(Collectors.toList());               // 변환된 결과를 리스트로 수집
         return ResponseEntity.ok(adminOptionCategoryFormList);
     }
 
