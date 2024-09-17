@@ -1,11 +1,11 @@
 package com.zerobase.Cafe_JOO.admin.product.dto;
 
+import com.zerobase.Cafe_JOO.front.product.domain.Option;
 import io.swagger.annotations.ApiModel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
-import javax.swing.text.html.Option;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
