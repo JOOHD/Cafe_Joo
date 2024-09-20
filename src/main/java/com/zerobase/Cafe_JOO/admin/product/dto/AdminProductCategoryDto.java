@@ -1,17 +1,17 @@
 package com.zerobase.Cafe_JOO.admin.product.dto;
 
-import com.zerobase.Cafe_JOO.front.product.domain.ProductCategory
+import com.zerobase.Cafe_JOO.front.product.domain.ProductCategory;
 
 import lombok.Builder;
 import lombok.Getter;
 
-public class AdminProductCategoryDto {
+public class  AdminProductCategoryDto {
 
     @Getter
     @Builder
     public static class Response {
 
-        private Integer productCategoryId;
+        private Integer productCategoryId; // GeneratedValue(strategy = Generation.IDENTITY)
 
         private String name;
 

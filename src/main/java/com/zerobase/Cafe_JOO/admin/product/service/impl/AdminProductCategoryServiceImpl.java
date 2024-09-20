@@ -68,6 +68,15 @@ public class AdminProductCategoryServiceImpl implements AdminProductCategoryServ
                 .collect(Collectors.toList());
         return productCategoryDtoList;
     }
+
+    // 상품 카테고리Id 별 조회
+    @Override
+    public AdminProductCategoryDto.Response findByIdProductCategory(Integer productCategoryId) {
+        ProductCategory productCategory = productCategoryRepository.findById(productCategoryId)
+                .orElseThrow(() -> new CustomException(PRODUCTCATEGORY_NOT_EXISTS));
+        AdminProductCategoryDto.Response dtoResponse = AdminProductCategoryDto.Response.from(productCategory);
+        return dtoResponse;
+    }
 }
 
 
