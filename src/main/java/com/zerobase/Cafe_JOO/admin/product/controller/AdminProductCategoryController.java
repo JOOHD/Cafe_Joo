@@ -54,11 +54,22 @@ public class AdminProductCategoryController {
 
     @ApiOperation(value = "상품 카테고리 전체 조회", notes = "관리자가 상품 카테고리를 전체조회합니다.")
     @GetMapping
-    public ResponseEntity<List<AdminProductCategoryForm.Response>> productCategoryList1() {
-        List<AdminProductCategoryDto.Response> productCategoryList = adminProductCategoryService.findAllProductCategory();
-        List<AdminProductCategoryForm.Response> productCategoryFormList = productCategoryList.stream()
+    public ResponseEntity<List<AdminProductCategoryForm.Response>> productCategoryList() {
+        List<AdminProductCategoryDto.Response> productCategoryDtoList = adminProductCategoryService.findAllProductCategory();
+        List<AdminProductCategoryForm.Response> productCategoryFormList = productCategoryDtoList.stream()
                 .map(AdminProductCategoryForm.Response::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok().body(productCategoryFormList);
+    }
+
+    @ApiOperation(value = "상품 카테고리Id별 조회", notes = "관리자가 상품 카테고리Id별 전체조회합니다.")
+    @GetMapping
+    public ResponseEntity<AdminProductCategoryForm.Response> productCategoryById(
+            @PathVariable Integer productCategoryId) {
+        AdminProductCategoryDto.Response byIdProductCategoryDto = adminProductCategoryService.findByIdProductCategory(
+                productCategoryId);
+        AdminProductCategoryForm.Response byIdProductCategoryForm
+                = AdminProductCategoryForm.Response.from(byIdProductCategoryDto);
+        return ResponseEntity.ok().body(byIdProductCategoryForm);
     }
 }
