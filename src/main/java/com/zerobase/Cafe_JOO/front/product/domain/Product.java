@@ -7,6 +7,7 @@ import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.util.Optional;
 
 @Builder
 @Getter
@@ -40,6 +41,7 @@ public class Product  extends BaseTimeEntity {
     @NotNull
     private String picture;
 
+    /*
     public void modifyProductForm(AdminProductDto productDto, ProductCategory productCategory) {
         if (productDto.getName() != null) {
             this.name = productDto.getName();
@@ -56,6 +58,15 @@ public class Product  extends BaseTimeEntity {
         if (productDto.getSoldOutStatus() != null) {
             this.soldOutStatus = productDto.getSoldOutStatus();
         }
+    }
+    */
+
+    public void modifyProductForm(AdminProductDto productDto, ProductCategory productCategory) {
+        Optional.ofNullable(productDto.getName()).ifPresent(name -> this.name = name);
+        Optional.ofNullable(productDto.getProductCategoryId()).ifPresent(id -> this.productCategory = productCategory);
+        Optional.ofNullable(productDto.getDescription()).ifPresent(desc -> this.description = desc);
+        Optional.ofNullable(productDto.getPrice()).ifPresent(price -> this.price = price);
+        Optional.ofNullable(productDto.getSoldOutStatus()).ifPresent(status -> this.soldOutStatus = status);
     }
 
     public void modifyNewImageUrl(String newImageUrl) {

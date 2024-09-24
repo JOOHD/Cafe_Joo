@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+import org.springframework.security.core.Authentication;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (StringUtils.hasText(token) && tokenProvider.validateToken(token)) {
             // 토큰 유효성 검증
-            Authentication authentication = tokenProvider.getAuthentication
+            Authentication authentication = tokenProvider.getAuthentication(token);
         } else {
             logger.debug("유요한 JWT 토큰이 없습니다.");
         }
