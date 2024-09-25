@@ -31,8 +31,8 @@ public class AuthService implements UserDetailsService {
     private final MemberRepository memberRepository;
 
     // 사용자 회원가입
-    public void signup(SignupMemberForm .Request form) {
-        SignupDto dto = SignupDto.from(form);
+    public void signup(SignupMemberForm.Request form) {
+        SignupDto dto = SignupDto.from(form); // SignupMemberForm -> SignupDto from(transfer)
         if (memberRepository.findByNickname(dto.getNickname()).isPresent()) {
             throw new CustomException(NICKNAME_ALREADY_EXISTS);
         }
@@ -44,7 +44,7 @@ public class AuthService implements UserDetailsService {
     }
 
     // 관리자 회원가입
-    public void signup(SignupAdminForm .Request form) {
+    public void signup(SignupAdminForm.Request form) {
         SignupDto dto = SignupDto.from(form);
 
         memberRepository.findByEmail(dto.getEmail()).ifPresent(member -> {

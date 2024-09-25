@@ -1,28 +1,19 @@
 package com.zerobase.Cafe_JOO.front.member.domain;
 
-import com.zerobase.Cafe_JOO.common.BaseTimeEntity;
 import com.zerobase.Cafe_JOO.auth.dto.SignupDto;
+import com.zerobase.Cafe_JOO.common.BaseTimeEntity;
 import com.zerobase.Cafe_JOO.common.config.security.Role;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.validation.constraints.NotNull;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 @Builder
 @Getter
@@ -57,9 +48,9 @@ public class Member extends BaseTimeEntity implements UserDetails {
         super();
     }
 
-    public static Member from(SignupDto signupDto, String encoredPassword, Role role) {
+    public static Member from(SignupDto signupDto, String encoderrt5Password, Role role) {
         return Member.builder()
-                .password(encoredPassword)
+                .password(encoderPassword)
                 .nickname(signupDto.getNickname())
                 .phone(signupDto.getPhone())
                 .email(signupDto.getEmail())
