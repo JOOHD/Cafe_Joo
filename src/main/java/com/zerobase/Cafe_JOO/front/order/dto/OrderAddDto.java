@@ -2,6 +2,7 @@ package com.zerobase.Cafe_JOO.front.order.dto;
 
 import com.zerobase.Cafe_JOO.common.type.Payment;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

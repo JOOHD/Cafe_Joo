@@ -5,6 +5,7 @@ import com.zerobase.Cafe_JOO.common.type.OrderCookingStatus;
 import com.zerobase.Cafe_JOO.common.type.OrderCookingTime;
 import com.zerobase.Cafe_JOO.common.type.OrderReceiptStatus;
 import com.zerobase.Cafe_JOO.common.type.Payment;
+import com.zerobase.Cafe_JOO.front.member.domain.Member;
 import com.zerobase.Cafe_JOO.front.order.dto.OrderAddDto;
 import lombok.*;
 

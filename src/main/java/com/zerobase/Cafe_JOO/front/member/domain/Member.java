@@ -48,9 +48,9 @@ public class Member extends BaseTimeEntity implements UserDetails {
         super();
     }
 
-    public static Member from(SignupDto signupDto, String encoderrt5Password, Role role) {
+    public static Member from(SignupDto signupDto, String encoredPassword, Role role) {
         return Member.builder()
-                .password(encoderPassword)
+                .password(encoredPassword)
                 .nickname(signupDto.getNickname())
                 .phone(signupDto.getPhone())
                 .email(signupDto.getEmail())
