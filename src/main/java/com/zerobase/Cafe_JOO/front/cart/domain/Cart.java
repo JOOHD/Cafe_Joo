@@ -1,6 +1,7 @@
 package com.zerobase.Cafe_JOO.front.cart.domain;
 
 import com.zerobase.Cafe_JOO.common.BaseTimeEntity;
+import com.zerobase.Cafe_JOO.common.type.CartOrderStatus;
 import com.zerobase.Cafe_JOO.front.member.domain.Member;
 import com.zerobase.Cafe_JOO.front.product.domain.Product;
 import lombok.*;
@@ -34,11 +35,11 @@ public class Cart  extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private CartOrderStatus status;
 
-    public void setQuantity(Integer quantity) {
+    public void setQuantity(Integer quantity) { // 장바구니 수량 수정 위함
         this.quantity = quantity;
     }
 
-    public void addQuantity(Integer quantity) {
+    public void addQuantity(Integer quantity) { // 장바구니 수량 합계 수정 위함
         this.quantity += quantity;
     }
 

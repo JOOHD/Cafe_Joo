@@ -82,22 +82,29 @@ public class OrderService {
 
          Order order = orderRepository.findById(orderId)
                  .orElseThrow(() -> new CustomException(ORDER_NOT_EXISTS));
+
+        // 주문자가 맞는지 확인, tokenProvider.getId(token)를 통해 토큰에서 사용자 ID를 추출하고,
+        // 주문의 사용자 ID와 비교하여 권한을 확인한다, 다른 사용자가 자신의 주문을 취소 못하도록
          if (!order.getMember().getId().equals(userId)) {
              throw new CustomException(ORDER_NOT_ACCESS);
          }
 
+        // 주문이 이미 진행 중인지 확인(COOKING, ReceiptStatus.RECEIVED)에서는 취소 불가.
          if (order.getCookingStatus() == OrderCookingStatus.COOKING
             || order.getReceiptStatus() == OrderReceiptStatus.RECEIVED) {
              throw new CustomException(ORDER_ALREADY_COOKING_STATUS);
          }
 
+         // 이미 취소된 주문인지 확인.(CANCELED, REJECTED 된 상태라면 중복 취소를 방지)
          if (order.getReceiptStatus() == OrderReceiptStatus.CANCELED
             || order.getReceiptStatus() == OrderReceiptStatus.REJECTED) {
              throw new CustomException(ORDER_ALREADY_CANCELED);
          }
 
+         // 모든 조건을 만족했을 경우,주문을 취소할 수 있도록 처리, 주문 상태를 CANCELED로 변경한 뒤,
          order.modifyReceiptStatus(OrderReceiptStatus.CANCELED);
 
+         // DB에 저장.
          orderRepository.save(order);
     }
 
@@ -121,7 +128,7 @@ public class OrderService {
             throw new CustomException(CART_IS_EMPTY);
         }
 
-        // Cart Entity 로 장바구니_옵션 테이블 조히
+        // Cart Entity 로 장바구니_옵션 테이블 조회
         cartListByMember.forEach(cart -> {
             // 장바구니 테이블의 상품 정보들을 주문_상품 테이블에 저장
             orderProductRepository.save(OrderProduct.builder()
