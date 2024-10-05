@@ -51,6 +51,13 @@ public class OrderService {
             throw new CustomException(ORDER_NOT_COOKING_STATUS);
         }
 
+        /*
+            // 주문 수락  시간 코드
+            if (this.cookingStatus == OrderCookingStatus.NONE
+                    && newStatus == OrderCookingStatus.COOKING) {
+                this.receivedTime = LocalDateTime.now();
+            }
+        */
         return order.getReceivedTime();
     }
 

@@ -48,6 +48,8 @@ public class Order extends BaseTimeEntity {
     private LocalDateTime receivedTime;
 
     public void modifyReceivedTime(OrderCookingStatus newStatus) {
+        // status가 NONE -> COOKING 변경 시, 현재 시간을 기록
+        // if (currentStatus == OrderCookingStatus.NONE 도 가능
         if (this.cookingStatus == OrderCookingStatus.NONE
                 && newStatus == OrderCookingStatus.COOKING) {
             this.receivedTime = LocalDateTime.now();
