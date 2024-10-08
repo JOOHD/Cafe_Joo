@@ -12,6 +12,7 @@ import com.zerobase.Cafe_JOO.front.cart.dto.CartListOptionDto;
 import com.zerobase.Cafe_JOO.front.cart.dto.CartProductDto;
 import com.zerobase.Cafe_JOO.front.member.domain.Member;
 import com.zerobase.Cafe_JOO.front.member.domain.MemberRepository;
+import com.zerobase.Cafe_JOO.front.product.domain.Option;
 import com.zerobase.Cafe_JOO.front.product.domain.OptionRepository;
 import com.zerobase.Cafe_JOO.front.product.domain.Product;
 import com.zerobase.Cafe_JOO.front.product.domain.ProductRepository;
@@ -24,8 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.zerobase.Cafe_JOO.common.exception.ErrorCode.MEMBER_NOT_EXISTS;
-import static com.zerobase.Cafe_JOO.common.exception.ErrorCode.PRODUCT_NOT_EXISTS;
+import static com.zerobase.Cafe_JOO.common.exception.ErrorCode.*;
 import static com.zerobase.Cafe_JOO.common.type.CartOrderStatus.BEFORE_ORDER;
 
 @Service
@@ -121,6 +121,7 @@ public class CartService {
         }
         List<Cart> carts = cartRepository.findByMember(member);
 
+        // CartProductDto 를 List (여러 값) 담을 빈 그릇
         List<CartProductDto> cartProductDtoList = new ArrayList<>();
 
         for (Cart otherCart : carts) {
@@ -137,7 +138,131 @@ public class CartService {
         }
 
         return cartProductDtoList;
+    }
 
+    // 장바구니 상품 수량 변경
+    public List<CartProductDto> modifyCart(String token, CartAddForm cartAddForm) {
+
+        Long userId = tokenProvider.getId(token);
+
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(MEMBER_NOT_EXISTS));
+
+        Product product = productRepository.findById(cartAddForm.getProductId())
+                .orElseThrow(() -> new CustomException(PRODUCT_NOT_EXISTS));
+
+        List<Cart> cartList = cartRepository.findByMemberAndProduct(member, product);
+
+        if (cartList.size() == 0) {
+            throw new CustomException(PRODUCT_NOT_EXISTS);
+        }
+
+        if (cartList.size() > 0) {
+
+            Boolean result = false; // 초기 값 설정
+
+            Integer quantity = 0;   // 초기 값 설정
+
+            for (Cart otherCart : cartList) {
+
+                List<Integer> optionIdList = from(otherCart);
+
+                Collections.sort(optionIdList);
+
+                List<Integer> optionIdCopyList = cartAddForm.getOptionIdList().stream()
+                        .sorted()
+                        .collect(Collectors.toList());
+
+                if (optionIdList.size() == cartAddForm.getOptionIdList().size()) {
+                    result = compare(optionIdList, optionIdCopyList);
+                    if (result) {
+                        otherCart.setQuantity(cartAddForm.getQuantity());
+                        cartRepository.save(otherCart);
+                        quantity++;
+                    }
+                }
+            }
+            if (quantity == 0) {
+                throw new CustomException(PRODUCT_NOT_EXISTS);
+            }
+        }
+
+        List<Cart> carts = cartRepository.findByMember(member);
+
+        List<CartProductDto> cartProductDtoList = new ArrayList<>();
+
+        for (Cart otherCart : carts) {
+
+            // Entity -> dto transfer (use from method)
+            CartProductDto cartProductDto = CartProductDto.from(otherCart);
+
+            List<CartOption> cartOptionList = cartOptionRepository.findByCart(otherCart);
+
+            for (CartOption cartOption : cartOptionList) {
+                cartProductDto.addOptionId(cartOption.getOption().getId());
+            }
+            cartProductDtoList.add(cartProductDto);
+        }
+        return cartProductDtoList;
+    }
+
+    // 장바구니에 상품 넣기
+    public List<CartProductDto> saveCart(String token, CartAddForm cartAddForm) {
+
+        Long userId = tokenProvider.getId(token);
+
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(MEMBER_NOT_EXISTS));
+
+        Product product = productRepository.findById(cartAddForm.getProductId())
+                .orElseThrow(() -> new CustomException(PRODUCT_NOT_EXISTS));
+
+        List<Cart> cartList = cartRepository.findByMemberAndProduct(member, product);
+
+        if (cartList.size() == 0) {
+
+            Cart cart = Cart.createCart(member, product, cartAddForm.getQuantity(),
+                    cartAddForm.getCartOrderStatus());
+
+            cartRepository.save(cart);
+
+            for (Integer optionId : cartAddForm.getOptionIdList()) {
+
+                Option option = optionRepository.findById(optionId)
+                        .orElseThrow(() -> new CustomException(OPTION_NOT_EXISTS));
+
+                CartOption cartOption = CartOption.createCartOption(cart, option);
+
+                cartOptionRepository.save(cartOption);
+            }
+        } else if (cartList.size() > 0){
+
+            Boolean result = false;
+
+            Integer quantity = 0;
+
+            for (Cart otherCart : cartList) {
+
+                List<Integer> optionIdList = from(otherCart);
+
+                Collections.sort(optionIdList);
+
+                List<Integer> optionIdCopyList = cartAddForm.getOptionIdList().stream()
+                        .sorted()
+                        .collect(Collectors.toList());
+
+                if (optionIdList.size() == cartAddForm.getOptionIdList().size()) ;
+                result = compare(optionIdList, optionIdCopyList);
+
+                if (result) {
+                    otherCart.addQuantity(cartAddForm.getQuantity());
+                    cartRepository.save(otherCart);
+                    quantity++;
+                }
+            }
+        }
+
+        
     }
 
     // Cart 객체를 사용해서 optionId들을 리스트에 저장
@@ -145,12 +270,15 @@ public class CartService {
 
         List<CartOption> cartOptionList = cartOptionRepository.findByCart(cart);
 
+        // 빈 그릇
         List<Integer> optionIdList = new ArrayList<>();
 
         for (CartOption cartOption : cartOptionList) {
+            // 빈 그릇에 CartOption의 id를 가져옴
             optionIdList.add(cartOption.getOption().getId());
         }
 
+        // 그 값을 반환 (from(otherCart)에 적용 할 값)
         return optionIdList;
     }
 
