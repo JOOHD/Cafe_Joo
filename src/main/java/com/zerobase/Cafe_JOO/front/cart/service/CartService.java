@@ -45,6 +45,8 @@ public class CartService {
 
     private final TokenProvider tokenProvider;
 
+     // form parameter는 controller에서 받아오는 값이고, service class에서 from 메서드로 변환
+
     // 장바구니 목록 조회
     public List<CartListDto> findCartList(String token) {
         Long memberId = tokenProvider.getId(token);
@@ -61,7 +63,7 @@ public class CartService {
 
             List<CartListOptionDto> cartListOptionDtos = new ArrayList<>();
 
-            // Entity -> dto 변환.
+            // Entity -> dto 변환 (CartListOptionDto.from())
             for (CartOption cartOption : allByCart) {
                 cartListOptionDtos.add(CartListOptionDto.from(cartOption.getOption()));
             }
@@ -83,7 +85,7 @@ public class CartService {
         Product product = productRepository.findById(cartAddForm.getProductId())
                 .orElseThrow(() -> new CustomException(PRODUCT_NOT_EXISTS));
 
-        List<Cart> cartList = cartRepository.findByMemberAndProduct(member,product);
+        List<Cart> cartList = cartRepository.findByMemberAndProduct(member, product);
 
         if (cartList.size() == 0) {
             throw new CustomException(PRODUCT_NOT_EXISTS);
@@ -203,10 +205,11 @@ public class CartService {
             }
             cartProductDtoList.add(cartProductDto);
         }
+
         return cartProductDtoList;
     }
 
-    // 장바구니에 상품 넣기
+    // 장바구니에 상픔 추가(선택한 상품/옵션/수량 추가)
     public List<CartProductDto> saveCart(String token, CartAddForm cartAddForm) {
 
         Long userId = tokenProvider.getId(token);
@@ -219,50 +222,99 @@ public class CartService {
 
         List<Cart> cartList = cartRepository.findByMemberAndProduct(member, product);
 
+        // List.size == 0 (빈 장바구니, 사용자 처음 상품 장바구니에 담을 때)
         if (cartList.size() == 0) {
 
+            // 새로운 장바구니(=cart) 항목 생성
             Cart cart = Cart.createCart(member, product, cartAddForm.getQuantity(),
                     cartAddForm.getCartOrderStatus());
 
+            // DB에 저장
             cartRepository.save(cart);
-
+            
+            // CartOption 만들기
             for (Integer optionId : cartAddForm.getOptionIdList()) {
 
+                // option 정보 가져오기
                 Option option = optionRepository.findById(optionId)
                         .orElseThrow(() -> new CustomException(OPTION_NOT_EXISTS));
 
+                // CartOption not exists (= createCartOption) 새로운 객체 생성
                 CartOption cartOption = CartOption.createCartOption(cart, option);
 
+                // DB 저장
                 cartOptionRepository.save(cartOption);
             }
-        } else if (cartList.size() > 0){
 
+        } else if (cartList.size() > 0) { // 기존 장바구니 수량 증가,
+                                         
             Boolean result = false;
 
             Integer quantity = 0;
 
             for (Cart otherCart : cartList) {
 
+                // cart (새로운), otherCart(기존) / from 메서드로 otherCart의 optionId를 추출
                 List<Integer> optionIdList = from(otherCart);
 
+                // List 요소 정렬(오름차순)
                 Collections.sort(optionIdList);
 
+                // optionIdCopyList = cartAddForm / optionIdList = otherCart
                 List<Integer> optionIdCopyList = cartAddForm.getOptionIdList().stream()
                         .sorted()
                         .collect(Collectors.toList());
 
-                if (optionIdList.size() == cartAddForm.getOptionIdList().size()) ;
-                result = compare(optionIdList, optionIdCopyList);
+                if (optionIdList.size() == cartAddForm.getOptionIdList().size()) {
+                    // optionIdList = 새로운, optionCopyIdList = 기존
+                    result = compare(optionIdList, optionIdCopyList);
 
-                if (result) {
-                    otherCart.addQuantity(cartAddForm.getQuantity());
-                    cartRepository.save(otherCart);
-                    quantity++;
+                    if (result) { // 기존 장바구니 존재 시, 수량 증가
+                        otherCart.addQuantity(cartAddForm.getQuantity());
+                        cartRepository.save(otherCart);
+                        quantity++;
+                    }
+                }
+            }
+
+            if (quantity == 0) { // 중복된 장바구니가 없는 경우, 새로운 장바구니 생성
+                Cart cart = Cart.createCart(member, product, cartAddForm.getQuantity(),
+                        cartAddForm.getCartOrderStatus());
+
+                cartRepository.save(cart);
+
+                for (Integer optionId : cartAddForm.getOptionIdList()) {
+
+                    Option option = optionRepository.findById(optionId)
+                            .orElseThrow(() -> new CustomException(OPTION_NOT_EXISTS));
+
+                    CartOption cartOption = CartOption.createCartOption(cart, option);
+
+                    cartOptionRepository.save(cartOption);
                 }
             }
         }
 
-        
+        // 모든 장바구니 조회
+        List<Cart> carts = cartRepository.findByMember(member);
+
+        List<CartProductDto> cartProductDtoList = new ArrayList<>();
+
+        for (Cart otherCart : carts) {
+
+            // DTO 변환
+            CartProductDto cartProductDto = CartProductDto.from(otherCart);
+
+            List<CartOption> cartOptionList = cartOptionRepository.findByCart(otherCart);
+
+            for (CartOption cartOption : cartOptionList) {
+                cartProductDto.addOptionId(cartOption.getOption().getId());
+            }
+
+            cartProductDtoList.add(cartProductDto);
+        }
+
+        return cartProductDtoList;
     }
 
     // Cart 객체를 사용해서 optionId들을 리스트에 저장
