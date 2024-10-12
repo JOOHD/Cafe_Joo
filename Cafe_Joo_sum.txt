@@ -1,0 +1,356 @@
+java는 지금까지 흐름의 구조를 보면, 사용자의 액션(회원가입, 파일 업로드, 로그인, 페이지 접속/이동...) 관련 값들을 클라이언트에서 화면 구조를 변수화하여 정적인 상황을 만들고, 동적인 값과 환경을 만들기 위해 서버를 만들어서 정적인 여러 데이터들을 동적으로 효츌적으로 관리하기 위해 서버에 전송하는 과정을 구현하고 서버에서는 그 값들을 컨트롤러 클래스에서 받아와 가공하고, 변환하여 db에 저장하고, 저장한 값들을 다시 불러와서 필요한 데이터면 사용자에게 꺼내서 보여주고 이 행동들을 코드와 프로그램들을 잘 이용하여 웹 애플리케이션을 만드는 것이다.
+
+!Instance
+if (!product) {
+    // product가 null이거나 false인 경우 실행
+}
+
+!= instance
+if (product != null) {
+    // product가 null이 아닌 경우 실행
+
+★★★
+@PathVariable Long/Integer 사용 차이점
+	Long : DB에서 자동 생성되는 기본 키(ID)는 BIGINT 타입으로 사용하는 경우,
+			Java에서는 Long 타입으로 매핑이 된다. 그래서 일반적으로 사용.
+		 	ex) 사용자 ID, 주문 ID, 제품 ID... 
+
+	Integer : DB에서 자동 생성되는 기본 키 값이 INT 타입으로 사용하는 경우.
+			ex) 페이지 번호, 간단한 상태 코드, 소규모 카운트 값
+
+★★★★★
+1. @ExceptionHandler 와 @RestControllerAdvice 와의 관계,
+	자동 연결 : @RestControllerAdvice에 선언된 @ExceptionHandler가 예외를 처리하는 메서드와 매핑되어
+				자동으로 호출된다. 이때, 발생한 예외 클래스와 일치하는 @ExceptionHandler가 호출되며,
+				해당 메서드에서 지정한 방식으로 응답이 반환.
+2. @ExceptionHandler(MethodArgumentNotValidException.class) 사용
+3. ExceptionHandler class의 errorCode, errorMessage 를 ResponseEntity<MethodInvalidResponse> 제네릭
+	타입에 넣어서 errorCode, errorMessage를 클라이언트에 반환해서 보여주는.
+
+AdminOrderService 클래스에 modifyNextCookingStatus라는 메서드가 있는데, 이 메서드 내부에 
+swich문에 case를 사용하여 current 값이 아니면, return문으로 다음 단계로 넘어가는 식의 상태를 나타내는 메서드인데,
+여기서 궁금증이 초기값 설정을 어떻게 하냐라는 의문이 들엇고, 이 궁금증의 해결은, Order 클래스의 주문 dto 클래스 안에 메서드중 사용자에게 return 해주는 값에
+public static Order fromAddOrderDto(OrderAddDto.Request dto, Member member) {
+        return Order.builder()
+            .member(member)
+            .payment(dto.getPayment())
+            .cookingStatus(OrderCookingStatus.NONE)
+            .cookingTime(null)
+            .receiptStatus(OrderReceiptStatus.WAITING)
+            .build();
+    }
+cookingStatus(OrderCookingStatus.NONE)이라는 초기 설정 값이 있었다.
+
+요약
+	1. 사용자가 주문을 생성 
+		- 사용자가 결제 정보, 주문 내용 등을 입력하고 주문 요청을 보낸다.
+	2. 필수 입력값 처리
+		- 사용자가 입력한 필수 값(결제 정보을 dto로 전달받고, 이를  이용해 Order 객체를 생성
+	3. 초기값 설정
+		- 사용자가 직접 입력할 필요가 없는 값(cookingStatus)은 시스템이 자동으로 초기값 설정.
+	4. 결과 반환
+		- 생성된 주문 객체는 초기 상태와 사용자가 입력한 값들이 모두 설정된 채로 반환.
+
+
+이 프로젝트의 특이점 중 하나가 dto 클래스를 두 개로 나눈다. 하나는 form, 다른 하나는 dto 클래스로 나누어
+클라이언트 -> 서버/ 서버 -> 클라이언트 두 구간의 데이터 전송에는 form class의 내부 변환 메서드를 사용하고,
+서버 -> 서버에서는 dto class를 사용한다. (추가로 dto -> entity 에서는 domain class 를 사용)
+
+ex)
+	● ~~~Form class
+
+	@Getter
+	@Builder
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public class OrderStatusModifyForm { // 요청 데이터 수집(form data binding==)
+
+    		private OrderCookingStatus newStatus;
+	}	
+
+
+	● ~~~Dto classs
+	public class OrderStatusModifyDto {
+
+    	    /*
+        	from 메서드는 정적 팩토리 메서드로,
+	        OrderStatusModifyForm 객체를 받아,
+	        OrderStatusModifyDto 객체를 생성합니다.
+	    */
+
+	    private OrderCookingStatus newStatus;
+
+    	    public static OrderStatusModifyDto from(OrderStatusModifyForm orderStatusModifyForm) {
+        		return OrderStatusModifyDto.builder()
+                		.newStatus(orderStatusModifyForm.getNewStatus())
+	                	.build();
+    	    }
+	}
+
+1. 두 클래스의 관계성
+
+	OrderStatusModifyForm
+		- 클라이언트에서 전달되는 요청 데이터를 수집하는 역할.
+		- 웹 애플리케이션에서 폼 데이터 바인딩에 사용되며, 사용자가 입력한 값이 이 객체로 매핑
+		- 주로 view 레이어에서 사용되는 DTO로 볼 수 있다.
+
+	OrderStatusModifyDto
+		- 비지니스 로직ㅇ을 처리하는 서비스 레이어에서 사용되는 객체
+		- 클라이언트의 요청 데이터(OrderStatusModifyForm)를 받아 비즈니스 로직에 맞게 가공.
+		- 주로 Service 계층에서 활용
+
+	정리
+		- 두 클래스는 데이터 변환과 유효성 검증의 과정에서 중요한 역할.
+		- OrderStatusModifyForm은 사용자 입력을 받아들이는 객체이고,
+		- 그 데이터를 서비스나 비즈니스 로직에 맞게 OrderStatusModifyDto로 변환한 뒤 처리.
+
+2. from 메서드의 역할
+
+	public static OrderStatusModifyDto from(OrderStatusModifyForm orderStatusModifyForm) {
+    		return OrderStatusModifyDto.builder()
+            		.newStatus(orderStatusModifyForm.getNewStatus())
+		        .build();
+	}
+	
+	- from 메서드는 정적 팩토리 메서드로, 특정한 객체(OrderStatusModifyForm)를 받아 다른 객체	  			  (OrderStatusModifyDto)로 변환하는 역할.
+
+	- 이를 통해 OrderStatusModifyForm에 담긴 데이터를 OrderStatusModifyDto로 변환하여, 비즈니스 로직을 수	  행하은 클래스에서 사용
+
+3. from 메서드는 왜 소속 클래스의 타입을 반환하는가?
+	
+	- from 메서드가 static이고 소속된 클래스(OrderStatusModifyDto)의 타입을 반환하는 이유는 정적 팩토리 메서	  드의 장점을 활용하기 위해서이다. 정적 팩토리 메서드의 주요 장점은 다음과 같다.
+
+	장점	
+		- new 키워드를 사용하지 않고 OrderStatusModifyDto.from() 형식으로 객체를 생성하면 코드가 
+			더 읽기 쉽고 의도가 명확.
+
+4. AdminOptionCategoryDto.Response 객체는 무엇인가?
+	
+	- AdminOptionCategoryDto.Response 타입의 객체 (OptionCategory data)를 담고 있는 DTO이다.
+		즉, DB에서 가져온 옵션 카테고리 정보를 담고 있는 객체를 의미.
+			- OptionCategory 정보를 DB에서 가져와서 클라이언트에 전송하는 역할.(CategoryId, name)
+
+
+● from 메서드의 (Form -> Dto) 변환 목적
+		
+	from() 메서드를 사용한 DTO에서 Form으로의 변환은 데이터를 단순히 다른 클래스 구조로 옮기는 과정이다. JSON -> JAVA 객체 변환 같은 변환이 아닌, 데이터 처리 계층에서 사용하는 목적이 다른 변환이다.
+
+	이 변환의 핵심적인 차이점은 역할의 분리이다.
+
+	이런 DTO와 Form을 구분하는 방식의 프로젝트는 규모가 크고 복잡한 프로젝트에서 많이들 사용한다.
+
+
+5. 두 개의 클래스(AdminOptionDto.Request / Option)가 동일한 필드 값을 가지고 있는데, 같은 클래스에서 중복으로 사용되는 점이 의문이다.
+
+    ● addOption method	    
+
+    @Override
+    public void addOption(AdminOptionDto.Request optionAddDto) {
+        Integer optionCategoryId = optionAddDto.getOptionCategoryId();
+        OptionCategory optionCategory = optionCategoryRepository.findById(optionCategoryId)
+                .orElseThrow(() -> new CustomException(OPTION_CATEGORY_NOT_EXISTS));
+
+
+        Option option = Option.builder()
+                .optionCategory(optionCategory)
+                .name(optionAddDto.getName())
+                .price(optionAddDto.getPrice())
+                .build();
+        optionRepository.save(option);
+    }
+		
+   1)  AdminOptionDto (DTO)
+	두 개의 클래스가 동일한 필드 값을 가지고 있지만, 그 목적과 역할이 다르기 때문에 중복으로 보일 수 있다.
+	- AdminOptionDto.Request 는 주로 외부에서 전달된 데이터를 처리하기 위한 객체이다.
+		- 즉, 사용자의 요청을 서버로 전달하는 데이터의 구조.
+
+   2) Option class (Entity)
+	DB와 직접적으로 매핑되는 Entity 이다. 즉, DB에서 저장할 객체를 나타내며, 해당 객체는 데이터 베이스 테이블의 구조와 유사하게 설계된다. 
+		- 이 객체는 주로 DB와의 상호작용을 위한 역할을 한다.
+
+   3) 왜 중복된 필드를 가진 클래스를 두 번 선언 하는가?
+	- 사용자로부터 받은 입력 데이터는 그대로 DB에 저장할 수 없을 수 있다.
+		- 추가적인 로직이 필요할 수 있으며, 데이터 검증도 반드시 필요하다.
+
+	- 사용자의 입력 데이터는 먼저 검증 과정을 거쳐야 한다. (DTO 데이터)
+
+   4) 코드의 중복이 아니고, 목적이 다르다.
+	Option option = Option.builder()
+        	.optionCategory(optionCategory)  // DTO의 필드를 엔티티로 변환
+	        .name(optionAddDto.getName())   // DTO에서 전달받은 값
+        	.price(optionAddDto.getPrice())     // DTO에서 전달받은 값
+	        .build();
+
+   5) DTO -> Entity 값을 가져오는 과정2
+	1. Integer optionCategoryId = request.getOptionCategoryId();
+		- request는 AdminOptionDto.Request 객체로 사용자 입력 데이터를 담고 있는 DTO
+		- DTO에서 값을 추출하는 과정이다. (사용자 입력 값 or Web/API를 통한 입력값)
+
+        2. OptionCategory optionCategory = optionCategoryRepository.findById(optionCategoryId)
+		- 추출한 optionCategoryId 값을 사용하여 optionCategoryRepository에서 DB에 저장된 optionCategory Entity조회.
+		- DTO에서 받은 데이터를 사용하여 DB에 저장된 엔티티를 조회하는 것.
+
+	● Form -> dto & dto -> entity 정리 
+	DTO와 Entity의 분리(DTO/Entity) 및 변환(DTO -> Entity, Request = form -> dto, Response = dto -> form)으로 분리되 구조를 통해 코드의 유지보수와 유연성에 기반을 둠. 
+
+	추가로 변환을 from 메서드를 통해 변환을 하는데, controller 에서는 클라이언트에서 값을 받아오는 구간이니까 (참고 : dto -> entity 부분은 생성, 업데이트, 저장 부분에서 나타난다.)
+
+	form -> dto
+		BestProductForm.BestProductResponse.from(instance)
+
+	dto -> entity 
+		- 변환 기준	
+		1. DTO에서 필드 값을 추출
+			// cartAddForm (= dto)
+			List<Integer> optionIdList = cartAddForm.getOptionIdList();
+
+		2. DTO에서 추출한 데이터를 Entity 생성자나 Builder 메서드에 전달하여 엔티티를 생서/값 설정
+			// DTO의 데이터를 사용하여 새로운 Entity 객체 생성(CartOption)
+			// createCartOption의 메서드는 전달된 (cart, option) DTO에서 추출한 데이터로 만든 Entity
+			CartOption.createCartOption(cart, option); 
+
+		3. Entity는 Repository를 통해 저장된다.
+			// CartOption 엔티티를 DB에 저장 
+			cartOptionRepository.save(cartOption); 			
+
+7. 빌더 패턴 사용
+	optionRepository.save(modifyOption.toBuilder()
+				.id(optionId.getId())
+				.build());
+
+	- toBuilder() 
+		- 기존 객체의 값을 그대로 유지하면서 특정 필드(id)만 수정할 수 있게 한다.
+		
+		ex) 
+			Option modifyOption = Option.builder()
+					.id(1)
+					.name("기존 옵션")
+					.price(1000)
+					.build();
+
+			- 이 상태에서 위 코드를 통해 id를 다시 설정하고 저장한다면, Option 객체는 id 값이 그대로 유지되면서 다른 수정된 값들이 반영되어 업데이트.
+
+
+8. @PreAuthorize("hasRole('ROLE_ADMIN')")
+	
+	- 권한을 Enum 클래스로 지정하게 되면,, 잘못된 권한이 들어오지 않도록 방지.
+
+
+9. class 안에 또 다른 class(static) 공존
+
+	class =  AdminProductForm 클래스는 클라이언트로부터 받은 상품 정보를 담는 DTO 클래스.
+	static class = Response 내부 클래스는 데이터 전송용 DTO 클래스.
+
+	두 개의 클래스의 관련성은 static 내부 클래스는 독립적으로 동작할 때 사용된다.
+	Response가 AdminProductForm의 필드나 상태에 접근할 필요가 없습니다.
+
+10. form method 를 이용한 업데이트(동적)
+
+	● Form 값을 메서드를 이용해 업데이트하는 작업이다. (동적)
+
+	public void modifyProductForm(AdminProductDto productDto, ProductCategory productCategory) {
+        	if (productDto.getName() != null) {
+	            this.name = productDto.getName();
+       	 	}
+	        if (productDto.getProductCategoryId() != null) {
+        	    this.productCategory = productCategory;
+        	}
+        	if (productDto.getDescription() != null) {
+	            this.description = productDto.getDescription();
+        	}
+	        if (productDto.getPrice() != null) {
+        	    this.price = productDto.getPrice();
+	        }
+        	if (productDto.getSoldOutStatus() != null) {
+	            this.soldOutStatus = productDto.getSoldOutStatus();
+	        }
+   	 }	
+
+	● builder() 패턴을 
+		- Builder 패턴: 객체를 생성할 때, 파라미터가 있는 생성자를 가독성있게 도와주는 기능이 빌더 패턴인 것
+	
+11. domain 대신 dto를 사용하는 이유
+
+	Entity 중 getter를 사용해 원하는 데이터를 표시하기가 어려운 경우도 있다. (예를 들어 로그인 이후 토큰 발급 	등과 같은 것이다. 발급된 엑세스 토큰은 데이터베이스에 저장하지 않는다.) 이 경우 Entity와 DTO가 분리되어 	있다면 DTO에 추가적으로 표시할 필드나 로직을 추가하고 Entity에는 변경 사항을 만들지 않아 도메인 모델링	을 건	들이지 않을 수 있다.
+
+12. form -. dto (from) 변환은 컨트롤러에서 client -> server 데이터 전송을 위함이기 때문에 컨트롤러에서 이루어지고,  dto -> form (from) 변환은 server -> client 또한 컨트롤러에서 변환 작업을 구현 할 수도 있겠지만, 컨트롤러는 외부 요청을 받고, 서비스 호출 및 응답을 반환하는 역할에 집중하는 것이 좋고, 서비스 클래스에서는 데이터 가공이나 변환(비즈니스 로직)을 담당하는 구조가 적합하다.
+
+12. token
+
+	- JWT 형식 일 때, 많이 사용되며, JWT는 세 가지 부분으로 구성된다.
+		1. Header
+			- JWT의 타입과 서명, 알고리즘을 포함한다.
+		2. Payload 
+			- 실제 claim이라고 불리는 정보가 담겨 있는 부분이다.
+			- 클레임에는 사용자에 대한 정보나 토큰의 만료 시간등의 내용이 포함될 수 있다.
+				{
+					  "sub": "1234567890",
+				   	  "name": "John Doe",
+  				  	  "iat": 1516239022,
+					  "exp": 1516242622,
+					  "roles": ["ROLE_USER"]
+				}
+
+		3. Signature
+			- 토큰이 변조되지 않았음을 확인하기 위해 사용.
+			- header와 payload를 합친 후, 서버에서 지정한 secretKey를 사용하여 서명.
+	
+	- header.payload.signature
+		이 부분들이 각각 Base64로 인코딩된 값으로, 점(.)으로 구분된다.
+	
+	- 결론적을 token에는 주로 사용자 정보, 권한, 토큰 발급 및 만료 정보 등이 들어있다.
+	
+13. 이 cafe 프로젝트의 데이터 전달 구조는 form/dto/domain(entity)으로 나뉜다.
+	여기서 dto directory의 form 클래스를 보면 form/response 두 부분으로 나뉜다.
+	
+@Getter
+@Builder
+public class BestProductForm {
+
+    private List<BestProductResponse> bestProducts;
+
+    @Getter
+    @Builder
+    public static class BestProductResponse {
+
+        private Integer/String productId/name/price........;
+
+        public static List<BestProductForm.BestProductResponse> from(
+            List<BestProductDto> bestProductDto) {
+            return bestProductDto.stream()
+                .map(productDto -> BestProductForm.BestProductResponse.builder()
+                        .productId(productDto.getProductId())
+                        .name(productDto.getName())
+                        .price(productDto.getPrice())
+                        .soldOutStatus(productDto.getSoldOutStatus())
+                        .picture(productDto.getPicture())
+                        .build())
+                .collect(Collectors.toList());
+        }
+    }
+}
+
+BestProductForm 
+	- 데이터 전송 : 클라이언트와 서버 간의 데이터 전송을 위한 포장 클래스.
+
+Response
+	- 응답 데이터 : BestProductResponse 서버가 클라이언트에게 보내는 데이터 형식.
+
+결론
+	- form 안에 response가 포함된 구조는 클라이언트가 요청할 때와 서버가 응답할 때 각각의 데이터 모델을 명확히 하기 위한 것.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
