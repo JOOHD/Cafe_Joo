@@ -1,12 +1,10 @@
 package com.zerobase.Cafe_JOO.common.config.security;
 
+import com.zerobase.Cafe_JOO.auth.service.AuthService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +14,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Slf4j
 @Component
