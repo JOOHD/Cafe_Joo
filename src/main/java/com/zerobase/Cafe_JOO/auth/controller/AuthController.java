@@ -58,6 +58,7 @@ public class AuthController {
     public ResponseEntity<SigninForm.Response> signin(
         @RequestBody @Valid SigninForm.Request signinForm
     ) {
+        // authService.signin(SigninDto.Response from(signinForm));
         Response signinDto = authService.signin(signinForm);
         String token = tokenProvider.generateToken(
             signinDto.getMemberId(), signinDto.getEmail(), signinDto.getRole()
@@ -65,6 +66,8 @@ public class AuthController {
         return ResponseEntity.ok(SigninForm.Response.from(token));
     }
 }
+
+
 
 
 

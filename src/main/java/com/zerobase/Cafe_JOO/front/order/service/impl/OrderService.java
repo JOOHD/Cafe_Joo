@@ -108,7 +108,7 @@ public class OrderService {
              throw new CustomException(ORDER_ALREADY_CANCELED);
          }
 
-         // 모든 조건을 만족했을 경우,주문을 취소할 수 있도록 처리, 주문 상태를 CANCELED로 변경한 뒤,
+         // 모든 조건을 만족했을 경우, 주문을 취소할 수 있도록 처리, 주문 상태를 CANCELED로 변경한 뒤,
          order.modifyReceiptStatus(OrderReceiptStatus.CANCELED);
 
          // DB에 저장.
